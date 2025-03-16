@@ -1,0 +1,941 @@
+{% extends "base.html" %} {% block title %}INFOSYS Image Analyzer - Medical
+Analysis{% endblock %} {% block content %}
+<div class="container py-5">
+  <!-- Enhanced Header Section -->
+  <div
+    class="page-header animate__animated animate__fadeIn animate__duration-800ms text-center"
+  >
+    <h1 class="text-dark mb-3" style="text-align: center">
+      Medical Image Analysis
+    </h1>
+    <p class="subtitle text-secondary text-center mx-auto">
+      AI-assisted medical image analysis for preliminary insights<br />
+      using advanced machine learning algorithms
+    </p>
+  </div>
+
+  <!-- Enhanced Medical Disclaimer Banner -->
+  <div
+    class="alert custom-alert mb-4 animate__animated animate__fadeIn animate__delay-200ms"
+  >
+    <div class="d-flex align-items-start">
+      <!-- <div class="alert-icon me-3">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+            </div> -->
+      <div class="alert-content">
+        <h4 class="alert-heading text-dark mb-2">
+          <i class="fas fa-exclamation-triangle text-warning"></i> Important
+          Notice
+        </h4>
+        <p class="mb-0 text-secondary">
+          This tool is for demonstration and educational purposes only. It
+          should not be used for medical diagnosis. Always consult qualified
+          healthcare professionals for medical advice and diagnosis.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="card upload-section animate__animated animate__fadeInUp animate__delay-200ms"
+  >
+    <!-- Enhanced Upload Section -->
+    <div class="upload-box" id="uploadBox">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <p class="upload-text">
+        Drag and drop your medical image here or click to browse
+      </p>
+      <div class="supported-formats">
+        <span class="badge bg-light text-dark me-2">DICOM</span>
+        <span class="badge bg-light text-dark me-2">PNG</span>
+        <span class="badge bg-light text-dark me-2">JPEG</span>
+        <span class="badge bg-light text-dark">TIFF</span>
+      </div>
+      <input
+        type="file"
+        id="fileInput"
+        accept=".dcm,.png,.jpg,.jpeg,.tiff"
+        style="display: none"
+      />
+    </div>
+
+    <!-- Enhanced Preview Container -->
+    <div class="preview-container hidden" id="previewContainer">
+      <img
+        id="previewImage"
+        class="preview-image"
+        alt="Medical image preview"
+      />
+      <div class="upload-success">
+        <i class="fas fa-check-circle"></i>
+        <span>Image uploaded successfully!</span>
+      </div>
+      <button
+        class="btn btn-primary generate-btn"
+        id="generateBtn"
+        onclick="generateAnalysis()"
+      >
+        <i class="fas fa-microscope"></i>
+        Generate Analysis
+      </button>
+      <button class="remove-btn" onclick="removeImage()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Loading Container -->
+    <div
+      id="loading"
+      class="loading-container hidden animate__animated animate__fadeIn"
+    >
+      <div class="spinner"></div>
+      <p>Analyzing medical image... This may take a few moments.</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div id="error-alert" class="alert alert-danger hidden" role="alert">
+      <i class="fas fa-exclamation-circle me-2"></i>
+      <span id="error-message"></span>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer" class="results-container hidden">
+      <!-- Key Findings Section -->
+      <div class="result-section">
+        <div class="section-header">
+          <h3><i class="fas fa-search"></i> Key Findings</h3>
+          <p class="section-description">
+            Primary observations from the analysis
+          </p>
+        </div>
+        <div class="content-box findings-box">
+          <div id="findings" class="result-text structured-text"></div>
+          <div class="action-buttons">
+            <button
+              class="btn btn-secondary"
+              onclick="copyToClipboard('findings')"
+            >
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagnosis Section -->
+      <div class="result-section">
+        <div class="section-header">
+          <h3><i class="fas fa-clipboard-list"></i> Potential Observations</h3>
+          <p class="section-description">
+            Detailed analysis and potential implications
+          </p>
+        </div>
+        <div class="content-box">
+          <p id="diagnosis" class="result-text"></p>
+          <div class="action-buttons">
+            <button
+              class="btn btn-secondary"
+              onclick="copyToClipboard('diagnosis')"
+            >
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations Section -->
+      <div class="result-section">
+        <div class="section-header">
+          <h3><i class="fas fa-notes-medical"></i> Recommendations</h3>
+          <p class="section-description">
+            Suggested next steps and considerations
+          </p>
+        </div>
+        <div class="content-box recommendation-box">
+          <div
+            id="recommendations"
+            class="result-text recommendation-text"
+          ></div>
+          <div class="action-buttons">
+            <button
+              class="btn btn-secondary"
+              onclick="copyToClipboard('recommendations')"
+            >
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confidence Score Section -->
+      <div class="result-section">
+        <div class="section-header">
+          <h3><i class="fas fa-info-circle"></i> Analysis Information</h3>
+          <p class="section-description">
+            Educational information about this analysis
+          </p>
+        </div>
+        <div class="content-box">
+          <div class="alert alert-info mb-0">
+            <i class="fas fa-graduation-cap me-2"></i>
+            <span
+              >This analysis is provided for educational purposes only. The AI
+              model has analyzed the image based on its training data, but this
+              should not be used for medical diagnosis. Always consult with
+              healthcare professionals for medical advice.</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+{% endblock %} {% block extra_styles %}
+<style>
+  :root {
+    --primary-color: #23cca2;
+    --primary-dark: #1daa8a;
+    --primary-light: #c8e6c9;
+    --secondary-color: #2c3e50;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #f44336;
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --border-radius: 12px;
+    --transition-speed: 0.3s;
+  }
+
+  /* General Styles */
+  body {
+    color: var(--text-primary);
+    background-color: #f8f9fa;
+  }
+
+  .container {
+    max-width: 1400px;
+  }
+
+  /* Header Styles */
+  .header-icon {
+    color: var(--primary-color);
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+
+  /* Alert Styles */
+  .custom-alert {
+    background-color: #fff3cd;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+  }
+
+  .alert-icon i {
+    font-size: 1.5rem;
+  }
+
+  /* Upload Box Styles */
+  .upload-box {
+    border: 2px dashed #dee2e6;
+    transition: all var(--transition-speed) ease;
+    background: white;
+  }
+
+  .upload-box:hover {
+    border-color: var(--primary-color);
+    background: #f8f9fa;
+    transform: translateY(-2px);
+  }
+
+  .upload-icon {
+    color: var(--primary-color);
+    transition: all var(--transition-speed) ease;
+  }
+
+  .upload-box:hover .upload-icon {
+    transform: scale(1.1);
+  }
+
+  /* Card Styles */
+  .card {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    background: linear-gradient(
+      45deg,
+      var(--primary-color),
+      var(--secondary-color)
+    );
+    color: white;
+    padding: 1rem;
+    border-bottom: none;
+  }
+
+  /* Button Styles */
+  .btn {
+    border-radius: 8px;
+    transition: all var(--transition-speed) ease;
+  }
+
+  .btn-primary {
+    background: var(--primary-color);
+    border: none;
+    box-shadow: 0 4px 6px rgba(33, 150, 243, 0.2);
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(33, 150, 243, 0.3);
+  }
+
+  /* Progress Bar Styles */
+  .progress {
+    background-color: #e3f2fd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    background: linear-gradient(
+      45deg,
+      var(--primary-color),
+      var(--secondary-color)
+    );
+    transition: width 1s ease;
+  }
+
+  /* Preview Styles */
+  .preview-box {
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .preview-box img {
+    max-height: 400px;
+    object-fit: contain;
+  }
+
+  /* Badge Styles */
+  .badge {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  /* Animation Classes */
+  .animate__animated {
+    animation-duration: 0.8s;
+  }
+
+  /* Toast Styles */
+  .toast {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .container {
+      padding: 1rem;
+    }
+
+    .display-4 {
+      font-size: 2rem;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+    }
+  }
+
+  /* Loading Spinner */
+  .spinner-wrapper {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.25rem;
+  }
+
+  /* Result Text Styling */
+  .result-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+  }
+
+  /* Utility Classes */
+  .hidden {
+    display: none !important;
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
+  }
+
+  /* Header adjustments */
+  .page-header {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .page-header .subtitle {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  /* Preview container adjustments */
+  .preview-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .preview-image {
+    max-height: 400px;
+    width: auto;
+    margin: 0 auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+
+  /* Upload success message */
+  .upload-success {
+    margin: 1rem 0;
+    color: var(--success-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  /* Generate button adjustments */
+  .generate-btn {
+    margin: 1rem auto;
+    padding: 0.75rem 2rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Remove button adjustments */
+  .remove-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .remove-btn:hover {
+    transform: scale(1.1);
+    background: var(--danger-color);
+  }
+
+  /* Loading Container Styles */
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    text-align: center; /* This ensures the text is centered */
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    margin-bottom: var(--spacing-md);
+    animation: spin 1s linear infinite;
+  }
+
+  /* Enhanced Text Formatting */
+  .structured-text {
+    font-size: 1.1em;
+    line-height: 1.8;
+    color: var(--text-primary);
+    padding: 1.5rem;
+  }
+
+  .findings-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Add spacing between paragraphs */
+  .structured-text p {
+    margin-bottom: 1.2rem;
+  }
+
+  /* Highlight important sections */
+  .structured-text strong {
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  /* List styling */
+  .structured-text ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .structured-text li {
+    margin-bottom: 0.8rem;
+    position: relative;
+    padding-left: 0.5rem;
+  }
+
+  /* Section breaks */
+  .structured-text hr {
+    margin: 1.5rem 0;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Numbered sections */
+  .structured-text ol {
+    counter-reset: section;
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .structured-text ol li {
+    counter-increment: section;
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+    position: relative;
+  }
+
+  .structured-text ol li::before {
+    content: counter(section) '.';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  /* Enhanced Recommendation Styling */
+  .recommendation-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .recommendation-text {
+    font-size: 1.1em;
+    line-height: 1.8;
+  }
+
+  .recommendation-item {
+    background: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 1.2rem;
+    padding: 1rem 1.2rem;
+    border-radius: 0 8px 8px 0;
+    transition: transform 0.2s ease;
+  }
+
+  .recommendation-item:hover {
+    transform: translateX(5px);
+    background: #f0f2f5;
+  }
+
+  .recommendation-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.1em;
+  }
+
+  .recommendation-content {
+    color: var(--text-primary);
+  }
+
+  /* Numbered list styling */
+  .recommendation-number {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    margin-right: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+  }
+</style>
+{% endblock %} {% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImage = document.getElementById('previewImage');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const loadingContainer = document.getElementById('loading');
+    const errorAlert = document.getElementById('error-alert');
+
+    // Hide loading and error on initial load
+    loadingContainer.classList.add('hidden');
+    errorAlert.classList.add('hidden');
+
+    // Upload box click handler
+    uploadBox.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop handlers
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.classList.add('dragover');
+    });
+
+    uploadBox.addEventListener('dragleave', () => {
+      uploadBox.classList.remove('dragover');
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadBox.classList.remove('dragover');
+
+      const file = e.dataTransfer.files[0];
+      if (file && isValidMedicalImage(file)) {
+        handleFile(file);
+      } else {
+        showError(
+          'Please upload a valid medical image file (DICOM, PNG, JPEG, or TIFF)'
+        );
+      }
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    function isValidMedicalImage(file) {
+      const validTypes = [
+        'image/png',
+        'image/jpeg',
+        'image/tiff',
+        'application/dicom',
+      ];
+      return validTypes.includes(file.type);
+    }
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        previewContainer.classList.remove('hidden');
+        uploadBox.classList.add('hidden');
+        errorAlert.classList.add('hidden');
+
+        // Show generate button instead of auto-analyzing
+        document.getElementById('generateBtn').style.display = 'block';
+        resultsContainer.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Add this new function
+    window.generateAnalysis = function () {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      loadingContainer.classList.remove('hidden');
+      resultsContainer.classList.add('hidden');
+      errorAlert.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Update the endpoint to match the route in main_routes.py
+      fetch('/api/analyze-medical-image', {
+        // Changed from /medical-image-analysis
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          loadingContainer.classList.add('hidden');
+          console.log('API Response:', data); // Debug log
+
+          if (data.success && data.data && data.data.analysis) {
+            // Map the API response structure to the UI elements
+            const analysis = data.data.analysis;
+
+            // Format the technical assessment and anatomical observations for findings
+            const technicalText = analysis.technical_assessment || '';
+            const anatomicalText = analysis.anatomical_observations || '';
+            const findingsText = technicalText + '\n\n' + anatomicalText;
+            document.getElementById('findings').innerHTML =
+              formatMedicalText(findingsText);
+
+            // Format the notable findings for diagnosis
+            const diagnosisText = analysis.notable_findings || '';
+            document.getElementById('diagnosis').innerHTML =
+              formatMedicalText(diagnosisText);
+
+            // Format the recommendations
+            const recommendationsText = analysis.recommendations || '';
+            document.getElementById('recommendations').innerHTML =
+              formatMedicalText(recommendationsText);
+
+            // Show results container
+            resultsContainer.classList.remove('hidden');
+          } else {
+            showError(
+              data.error?.message || data.error || 'Error analyzing image'
+            );
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          loadingContainer.classList.add('hidden');
+          showError('Error processing image. Please try again.');
+        });
+    };
+
+    // Add the missing showError function
+    function showError(message) {
+      const errorAlert = document.getElementById('error-alert');
+      const errorMessage = document.getElementById('error-message');
+      errorAlert.classList.remove('hidden');
+      errorMessage.textContent = message;
+    }
+
+    window.removeImage = function () {
+      previewContainer.classList.add('hidden');
+      uploadBox.classList.remove('hidden');
+      fileInput.value = '';
+      resultsContainer.classList.add('hidden');
+      errorAlert.classList.add('hidden');
+      loadingContainer.classList.add('hidden');
+      document.getElementById('generateBtn').style.display = 'none';
+    };
+
+    window.copyToClipboard = function (elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          showToast('Copied to clipboard!', 'success');
+        })
+        .catch(() => {
+          showToast('Failed to copy text', 'error');
+        });
+    };
+  });
+
+  function formatMedicalText(text) {
+    if (!text || text.trim() === '') {
+      return '<p>No information available</p>';
+    }
+
+    // Add line breaks for better readability
+    text = text.replace(/\n/g, '<br>');
+
+    // Add bold to important medical terms
+    const medicalTerms = [
+      'calcifications',
+      'malignant',
+      'benign',
+      'cysts',
+      'fibroadenomas',
+      'fracture',
+      'lesion',
+      'tumor',
+      'carcinoma',
+      'metastasis',
+      'edema',
+      'inflammation',
+      'atrophy',
+      'hypertrophy',
+      'necrosis',
+      'ischemia',
+      'hemorrhage',
+      'infarction',
+      'stenosis',
+      'occlusion',
+      'aneurysm',
+      'embolism',
+      'thrombosis',
+      'sclerosis',
+      'fibrosis',
+      'dysplasia',
+      'hyperplasia',
+      'aplasia',
+      'agenesis',
+      'hypoplasia',
+      'dystrophy',
+      'radius',
+      'ulna',
+      'carpal',
+      'metacarpal',
+      'phalanx',
+      'phalanges',
+      'distal',
+      'proximal',
+      'anterior',
+      'posterior',
+      'lateral',
+      'medial',
+      'superior',
+      'inferior',
+      'ventral',
+      'dorsal',
+      'cranial',
+      'caudal',
+      'sagittal',
+      'coronal',
+      'transverse',
+      'axial',
+      'frontal',
+      'occipital',
+      'temporal',
+      'parietal',
+      'cervical',
+      'thoracic',
+      'lumbar',
+      'sacral',
+      'coccygeal',
+      'vertebra',
+      'vertebrae',
+      'intervertebral',
+      'disc',
+      'disk',
+    ];
+
+    // Create regex pattern for medical terms
+    const medicalTermsPattern = new RegExp(
+      `\\b(${medicalTerms.join('|')})\\b`,
+      'gi'
+    );
+    text = text.replace(medicalTermsPattern, '<strong>$1</strong>');
+
+    // Format bullet points and numbered lists
+    text = text.replace(/\*\s+([^\n]+)/g, '• $1');
+    text = text.replace(/(\d+\)|\d+\.)\s+([^\n]+)/g, '<strong>$1</strong> $2');
+
+    // Wrap in paragraph
+    return `<p>${text}</p>`;
+  }
+
+  function formatRecommendations(text) {
+    // Split the text into individual recommendations
+    const recommendations = text
+      .split(/(?=\d+\.\s)/)
+      .filter((item) => item.trim());
+
+    // Format each recommendation
+    const formattedHtml = recommendations
+      .map((rec, index) => {
+        // Extract the title and content
+        const [title, ...content] = rec.split(':');
+        const titleText = title.replace(/^\d+\.\s*/, '').trim();
+        const contentText = content.join(':').trim();
+
+        return `
+            <div class="recommendation-item">
+                <div class="recommendation-title">
+                    <span class="recommendation-number">${index + 1}</span>
+                    ${titleText}
+                </div>
+                <div class="recommendation-content">
+                    ${contentText}
+                </div>
+            </div>
+        `;
+      })
+      .join('');
+
+    return formattedHtml;
+  }
+
+  // Update your existing JavaScript to use the new formatting
+  function updateRecommendations(data) {
+    const recommendationsContainer = document.getElementById('recommendations');
+    if (recommendationsContainer && data.recommendations) {
+      recommendationsContainer.innerHTML = formatRecommendations(
+        data.recommendations
+      );
+    }
+  }
+
+  // Example of how the recommendations will be formatted:
+  /*
+1. Regularly Monitor Your Breast Health
+   Always remain aware of any changes in how your breasts look and feel...
+
+2. Regular Mammograms
+   Arrange for regular mammograms as recommended by your doctor...
+
+3. Adopting a Healthy Lifestyle
+   Maintain a healthy lifestyle that includes a balanced diet...
+
+4. Awareness About Family Medical History
+   Be aware of your family history of breast cancer...
+*/
+</script>
+{% endblock %}
